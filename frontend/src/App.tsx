@@ -1,18 +1,14 @@
-import { Box, Button, Group, Stack, Text, Title } from "@mantine/core";
+import { Box, Group, Text } from "@mantine/core";
 import { useCallback, useEffect, useState } from "react";
 
 import { ApiError, fetchDevices } from "./api";
-import { ThingsToCover } from "./components/ThingsToCover";
+import { Logo } from "./components/HomeSections";
+import Home from "./screens/Home";
+import { Recording } from "./screens/Recording";
+import { Review } from "./screens/Review";
 import { Start } from "./screens/Start";
 import { charted } from "./theme";
-import type {
-  CoverageItem,
-  Device,
-  DeviceId,
-  RecordingProps,
-  ReviewProps,
-  TranscriptLine,
-} from "./types";
+import type { CoverageItem, Device, DeviceId, TranscriptLine } from "./types";
 
 /**
  * The home page, then one screen that changes state: start, recording, review.
@@ -74,11 +70,12 @@ export default function App() {
 
   const device = devices?.find((d) => d.id === deviceId) ?? null;
 
-  if (view.name === "home") return <HomePlaceholder onOpenApp={openApp} />;
+  if (view.name === "home") return <Home onEnter={openApp} />;
 
   return (
     <Box mih="100vh">
-      <TopBar step={view.name === "review" ? 2 : 1} device={view.name === "start" ? null : device} />
+      {/* Recording names the device under its own title, so the bar shows it on review only. */}
+      <TopBar step={view.name === "review" ? 2 : 1} device={view.name === "review" ? device : null} />
       {view.name === "start" || !device ? (
         <Start
           devices={devices}
@@ -89,12 +86,12 @@ export default function App() {
           onStart={() => setView({ name: "recording" })}
         />
       ) : view.name === "recording" ? (
-        <RecordingPlaceholder
+        <Recording
           device={device}
           onStop={(transcript, coverage) => setView({ name: "review", transcript, coverage })}
         />
       ) : (
-        <ReviewPlaceholder
+        <Review
           device={device}
           transcript={view.transcript}
           coverage={view.coverage}
@@ -143,88 +140,14 @@ function TopBar({ step, device }: { step: 1 | 2 | 3; device: Device | null }) {
   );
 }
 
+/** The same logo and name as the home page's nav bar. */
 function Brand() {
   return (
     <Group gap={12} wrap="nowrap">
-      <span
-        aria-hidden
-        style={{
-          width: 36,
-          height: 36,
-          borderRadius: 10,
-          background: charted.green,
-          position: "relative",
-          flex: "none",
-        }}
-      >
-        <span
-          style={{
-            position: "absolute",
-            inset: 9,
-            border: `3px solid ${charted.lime}`,
-            borderRightColor: "transparent",
-            borderRadius: "50%",
-          }}
-        />
-      </span>
+      <Logo size={36} />
       <Text fz={26} fw={700} c={charted.ink} style={{ letterSpacing: "-0.04em" }}>
-        Visit notes
+        Everi
       </Text>
     </Group>
-  );
-}
-
-// ── Placeholders: s6 swaps in s7's Home.tsx, s3's Recording.tsx and s5's Review.tsx ──
-
-function HomePlaceholder({ onOpenApp }: { onOpenApp: () => void }) {
-  return (
-    <Box mih="100vh">
-      <Group px={64} py={24}>
-        <Brand />
-      </Group>
-      <Stack align="center" gap={24} pt={120}>
-        <Title order={1}>Visit notes that write themselves</Title>
-        <Text fz={24} c={charted.muted}>
-          Talk with your patient. The note is ready when they leave.
-        </Text>
-        <Button onClick={onOpenApp} mt={16}>
-          Start recording
-        </Button>
-      </Stack>
-    </Box>
-  );
-}
-
-function RecordingPlaceholder({ device, onStop }: RecordingProps) {
-  return (
-    <Stack align="center" gap={32} pt={40} pb={80}>
-      <Title order={1}>Recording</Title>
-      <Button color="red" onClick={() => onStop([], [])}>
-        Stop
-      </Button>
-      <Box w={760}>
-        <ThingsToCover questions={device.questions} coverage={[]} />
-      </Box>
-    </Stack>
-  );
-}
-
-function ReviewPlaceholder({ device, coverage, onNewVisit }: ReviewProps) {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  return (
-    <Stack align="center" gap={32} pt={40} pb={80}>
-      <Title order={1}>Your note</Title>
-      <Box w={760}>
-        <ThingsToCover
-          questions={device.questions}
-          coverage={coverage}
-          selectedId={selectedId}
-          onSelect={(id) => setSelectedId((open) => (open === id ? null : id))}
-        />
-      </Box>
-      <Button variant="default" onClick={onNewVisit}>
-        New visit
-      </Button>
-    </Stack>
   );
 }
