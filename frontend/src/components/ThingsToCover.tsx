@@ -18,8 +18,8 @@ import type { CoverageItem, GuidingQuestion, ThingsToCoverProps, TranscriptLine 
  * the page is the same height whichever type is picked and nothing on it jumps.
  * `compact` (recording only): tighter rows, with the covering line on the name's own
  * line, so all seven rows fit one laptop screen and a row keeps its height as it turns green.
- * `checking` (recording only, with `compact`): a check is running, so the grey rows say
- * "Checking…" in the place of "Not discussed yet", in a slot as wide as the wider of the two.
+ * `checking` (recording only, with `compact`): a check is running, so one small "Checking…"
+ * shows by the title, never on the rows.
  */
 export function ThingsToCover({
   questions,
@@ -35,15 +35,19 @@ export function ThingsToCover({
 
   return (
     <Card
+      data-ttc-card
       shadow="none"
       px={compact ? 28 : 36}
       py={compact ? 12 : 24}
       style={{ boxShadow: charted.cardShadow, borderColor: charted.line }}
     >
       {compact ? <style>{LIVE_KEYFRAMES}</style> : null}
-      <Text fz={17} fw={600} c={charted.muted} mb={4}>
-        Things to cover
-      </Text>
+      <Box style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }} mb={4}>
+        <Text fz={17} fw={600} c={charted.muted}>
+          Things to cover
+        </Text>
+        {compact ? <CheckingLine checking={checking} /> : null}
+      </Box>
       <Box data-list style={listMaxHeight ? { maxHeight: listMaxHeight, overflowY: "auto", overscrollBehavior: "contain" } : undefined}>
         {questions.map((question, index) => (
           <Row
@@ -54,7 +58,6 @@ export function ThingsToCover({
             open={selectedId === question.id}
             onSelect={onSelect}
             compact={compact}
-            checking={checking}
             lines={lines}
           />
         ))}
@@ -77,12 +80,11 @@ interface RowProps {
   open: boolean;
   onSelect?: (questionId: string) => void;
   compact: boolean;
-  checking: boolean;
   /** Review only: the visit's lines, so the open quote can say who said it. */
   lines?: TranscriptLine[];
 }
 
-function Row({ question, item, last, open, onSelect, compact, checking, lines }: RowProps) {
+function Row({ question, item, last, open, onSelect, compact, lines }: RowProps) {
   const covered = Boolean(item?.covered && item.quote);
   const clickable = covered && onSelect !== undefined;
   // Recording passes no onSelect: the line shows at once. Review shows it on click.
@@ -119,7 +121,11 @@ function Row({ question, item, last, open, onSelect, compact, checking, lines }:
               ) : (
                 <Box style={{ flex: 1 }} />
               )}
-              {covered ? null : <LiveStatus checking={checking} />}
+              {covered ? null : (
+                <Text data-status fz={16} fw={500} c="#9AA096" style={{ flex: "none", whiteSpace: "nowrap", marginTop: 3 }}>
+                  Not discussed yet
+                </Text>
+              )}
             </Box>
             <Text fz={16} lh={1.35} c={charted.muted} mt={1}>
               {question.question}
@@ -196,28 +202,22 @@ function Dot({ covered }: { covered: boolean }) {
 }
 
 /**
- * Recording's grey-row status: "Not discussed yet", or "Checking…" while a check runs.
- * Both words sit in one grid cell and only one is visible, so the slot keeps the width
- * of the wider one and nothing beside it moves when the words swap.
+ * Recording only: one small, quiet "Checking…" by the list's title while a check runs,
+ * in place of a word on every row (q35). It is always laid out and only shown or hidden,
+ * so nothing under it moves when a check starts or ends.
  */
-function LiveStatus({ checking }: { checking: boolean }) {
-  const word: CSSProperties = { gridArea: "1 / 1", textAlign: "right", whiteSpace: "nowrap" };
+function CheckingLine({ checking }: { checking: boolean }) {
   return (
-    <Box style={{ display: "grid", flex: "none", marginTop: 3 }}>
-      <Text fz={16} fw={500} c="#9AA096" style={{ ...word, visibility: checking ? "hidden" : "visible" }}>
-        Not discussed yet
-      </Text>
-      <Text
-        data-ttc-anim
-        fz={16}
-        fw={500}
-        c="#9AA096"
-        aria-hidden={!checking}
-        style={{ ...word, visibility: checking ? "visible" : "hidden", animation: checking ? "ttc-breathe 1.6s ease-in-out infinite" : "none" }}
-      >
-        Checking…
-      </Text>
-    </Box>
+    <Text
+      data-ttc-anim
+      fz={14}
+      fw={500}
+      c="#9AA096"
+      aria-live="polite"
+      style={{ whiteSpace: "nowrap", visibility: checking ? "visible" : "hidden", animation: checking ? "ttc-breathe 1.6s ease-in-out infinite" : "none" }}
+    >
+      Checking…
+    </Text>
   );
 }
 

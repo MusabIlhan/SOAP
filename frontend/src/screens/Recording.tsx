@@ -1,5 +1,5 @@
-import { Alert, Box, Button, Group, Loader, Stack, Text, Title } from "@mantine/core";
-import { IconPlayerStopFilled } from "@tabler/icons-react";
+import { Alert, Box, Button, Group, Loader, Stack, Text, Title, UnstyledButton } from "@mantine/core";
+import { IconChevronDown, IconChevronUp, IconPlayerStopFilled } from "@tabler/icons-react";
 import { useElementSize } from "@mantine/hooks";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
@@ -17,6 +17,11 @@ const LINES_SHOWN = 3;
 /** The mic light's largest core; on a shorter window it shrinks so Stop stays in view. */
 const MIC_MAX = 168;
 const MIC_MIN = 56;
+/** The red dot by "Recording": a slow blink, still for reduced motion. */
+const REC_KEYFRAMES = `
+@keyframes rec-blink { 0%, 100% { opacity: 1 } 50% { opacity: 0.25 } }
+@media (prefers-reduced-motion: reduce) { [data-rec-anim] { animation: none !important } }
+`;
 
 type Phase = "starting" | "live" | "stopping" | "failed";
 
@@ -36,6 +41,8 @@ export function Recording({ device, onStop }: RecordingProps) {
   /** A check is running: the grey rows say "Checking…". */
   const [checking, setChecking] = useState(false);
   const [seconds, setSeconds] = useState(0);
+  /** The live words can be folded away by someone who does not want to see them (q35). */
+  const [wordsShown, setWordsShown] = useState(true);
 
   const transcription = useRef<Transcription | null>(null);
   /** Lines from earlier tries, kept when transcription is started again after an error. */
@@ -203,9 +210,26 @@ export function Recording({ device, onStop }: RecordingProps) {
           <Title order={2} fz={44} style={{ letterSpacing: "-0.03em" }}>
             {phase === "starting" ? "Starting…" : stopping ? "Finishing up…" : phase === "failed" ? "Recording paused" : "Listening"}
           </Title>
-          <Text fz={22} fw={500} c={charted.muted} style={{ fontVariantNumeric: "tabular-nums" }}>
-            {clock(seconds)}
-          </Text>
+          <Group gap={10} wrap="nowrap" align="center">
+            <style>{REC_KEYFRAMES}</style>
+            <Box
+              component="span"
+              data-rec-anim
+              aria-hidden
+              style={{
+                width: 14,
+                height: 14,
+                borderRadius: "50%",
+                background: "#D9372B",
+                visibility: phase === "live" ? "visible" : "hidden",
+                animation: phase === "live" ? "rec-blink 1.4s ease-in-out infinite" : "none",
+              }}
+            />
+            <Text fz={22} fw={600} c={phase === "live" ? "#D9372B" : charted.muted} style={{ fontVariantNumeric: "tabular-nums" }}>
+              {phase === "live" ? "Recording " : ""}
+              {clock(seconds)}
+            </Text>
+          </Group>
         </Stack>
 
         <Box ref={micSlot.ref} className={phone.micSlot} style={{ flex: "1 1 0", minHeight: 0, alignSelf: "stretch", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -251,9 +275,22 @@ export function Recording({ device, onStop }: RecordingProps) {
             {checkError} The list stays as it is and is checked again at Stop.
           </Text>
         ) : null}
-        <Text fz={15} fw={600} c={charted.muted} px={8} mt={4} mb={-6} className={phone.small} style={{ flex: "none" }}>
-          What the mic hears
-        </Text>
+        <UnstyledButton
+          onClick={() => setWordsShown((v) => !v)}
+          aria-expanded={wordsShown}
+          px={8}
+          mt={4}
+          mb={-6}
+          style={{ flex: "none", alignSelf: "flex-start", display: "inline-flex", alignItems: "center", gap: 4, color: charted.muted }}
+        >
+          <Text fz={15} fw={600} c={charted.muted} className={phone.small}>
+            What the mic hears
+          </Text>
+          <Text fz={14} fw={500} c="#A3A8A1" ml={6}>
+            {wordsShown ? "Hide" : "Show"}
+          </Text>
+          {wordsShown ? <IconChevronUp size={16} color="#A3A8A1" /> : <IconChevronDown size={16} color="#A3A8A1" />}
+        </UnstyledButton>
         <Box
           px={8}
           aria-live="off"
@@ -261,7 +298,7 @@ export function Recording({ device, onStop }: RecordingProps) {
           style={{ flex: "1 1 0", minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "flex-end" }}
         >
           {/* Grows to fill the room, so lines sit at the top; when they need more room it overflows upward, so the newest stay in view. */}
-          <Box style={{ flex: "1 0 auto" }}>
+          <Box style={{ flex: "1 0 auto", visibility: wordsShown ? "visible" : "hidden" }} data-words-hidden={wordsShown ? undefined : ""}>
             {shown.length === 0 && !pending ? (
               <Text fz={16} c="#A3A8A1">
                 The words will appear here as you talk.
