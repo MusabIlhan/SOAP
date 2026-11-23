@@ -9,32 +9,53 @@ from dotenv import load_dotenv
 from flask import Flask, Response, jsonify, request
 from pydantic import BaseModel, ValidationError
 
+import model
+import transcription
 from devices import DEVICES, get_device
 from schemas import (
+    CoverageItem,
     CoverageRequest,
     CoverageResponse,
+    Device,
     DevicesResponse,
     ErrorResponse,
     NoteRequest,
+    NoteResponse,
+    TranscriptionKeyResponse,
+    TranscriptLine,
 )
-from services import SampleServices, ServiceError, Services
+from services import ServiceError, Services
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 PORT = 5001
 
 
-def _json(model: BaseModel, status: int = 200) -> tuple[Response, int]:
-    return jsonify(model.model_dump(mode="json")), status
+def _json(body: BaseModel, status: int = 200) -> tuple[Response, int]:
+    return jsonify(body.model_dump(mode="json")), status
 
 
 def _error(message: str, status: int) -> tuple[Response, int]:
     return _json(ErrorResponse(error=message), status)
 
 
+class LiveServices:
+    """The real calls: a Soniox key for the browser, and Claude through the command line."""
+
+    def transcription_key(self) -> TranscriptionKeyResponse:
+        return transcription.temporary_key()
+
+    def coverage(self, device: Device, transcript: list[TranscriptLine]) -> list[CoverageItem]:
+        return model.coverage(device, transcript)
+
+    def note(self, device: Device, transcript: list[TranscriptLine]) -> NoteResponse:
+        return model.note(device, transcript)
+
+
 def create_app(services: Services | None = None) -> Flask:
+    """The app on the real calls; the contract test passes `SampleServices()` instead."""
     app = Flask(__name__)
-    svc: Services = services or SampleServices()
+    svc: Services = services or LiveServices()
 
     @app.errorhandler(ValidationError)
     def bad_request(err: ValidationError):
