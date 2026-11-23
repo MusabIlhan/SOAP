@@ -12,7 +12,17 @@ import type { CoverageItem, GuidingQuestion, ThingsToCoverProps } from "../types
  * patient's own words. Without it (recording), a green question shows its line
  * at once, on one quiet line, so nobody has to touch the laptop.
  */
-export function ThingsToCover({ questions, coverage, selectedId, onSelect }: ThingsToCoverProps) {
+/**
+ * `listMaxHeight` (start only): the rows scroll inside the card past this height, so
+ * the page is the same height whichever type is picked and nothing on it jumps.
+ */
+export function ThingsToCover({
+  questions,
+  coverage,
+  selectedId,
+  onSelect,
+  listMaxHeight,
+}: ThingsToCoverProps & { listMaxHeight?: string }) {
   const byId = new Map(coverage.map((item) => [item.question_id, item]));
 
   return (
@@ -20,16 +30,18 @@ export function ThingsToCover({ questions, coverage, selectedId, onSelect }: Thi
       <Text fz={17} fw={600} c={charted.muted} mb={4}>
         Things to cover
       </Text>
-      {questions.map((question, index) => (
-        <Row
-          key={question.id}
-          question={question}
-          item={byId.get(question.id)}
-          last={index === questions.length - 1}
-          open={selectedId === question.id}
-          onSelect={onSelect}
-        />
-      ))}
+      <Box style={listMaxHeight ? { maxHeight: listMaxHeight, overflowY: "auto", overscrollBehavior: "contain" } : undefined}>
+        {questions.map((question, index) => (
+          <Row
+            key={question.id}
+            question={question}
+            item={byId.get(question.id)}
+            last={index === questions.length - 1}
+            open={selectedId === question.id}
+            onSelect={onSelect}
+          />
+        ))}
+      </Box>
     </Card>
   );
 }

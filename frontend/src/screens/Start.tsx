@@ -25,7 +25,7 @@ export function Start({ devices, error, onRetry, deviceId, onPickDevice, onStart
   const device = devices?.find((d) => d.id === deviceId) ?? null;
 
   return (
-    <Stack align="center" gap={0} pt={40} pb={80}>
+    <Stack align="center" gap={0} pt={40} pb={40}>
       <Title order={1} style={{ letterSpacing: "-0.03em" }} c={charted.ink}>
         Ready when you are
       </Title>
@@ -42,7 +42,10 @@ export function Start({ devices, error, onRetry, deviceId, onPickDevice, onStart
           <DevicePicker devices={devices} deviceId={deviceId} onPick={onPickDevice} />
           <StartButton onClick={onStart} />
           <Box w={760} mt={48}>
-            <ThingsToCover questions={device.questions} coverage={[]} />
+            {/* The rows scroll inside the card. 650px is everything above the rows (bar,
+                title, pills, button, card heading) and below them (card and page padding),
+                so the page fits one 900px-high laptop screen with any type picked. */}
+            <ThingsToCover questions={device.questions} coverage={[]} listMaxHeight="max(220px, calc(100vh - 650px))" />
           </Box>
         </>
       )}
@@ -70,11 +73,13 @@ function DevicePicker({
             aria-checked={on}
             onClick={() => onPick(d.id)}
             style={{
-              display: "inline-flex",
+              // Every pill is as wide as it is when picked (tick included), so picking
+              // another type never resizes a pill or pushes its neighbours (msg:61).
+              display: "inline-grid",
               alignItems: "center",
-              gap: 12,
+              justifyItems: "center",
               height: 64,
-              padding: on ? "0 28px 0 14px" : "0 28px",
+              padding: "0 28px 0 14px",
               borderRadius: 999,
               fontSize: 22,
               fontWeight: 600,
@@ -85,28 +90,40 @@ function DevicePicker({
               transition: "background 150ms ease, color 150ms ease, border-color 150ms ease",
             }}
           >
-            {on ? (
-              <span
-                aria-hidden
-                style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: "50%",
-                  background: charted.lime,
-                  color: charted.green,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <IconCheck size={22} stroke={3} />
-              </span>
-            ) : null}
-            {d.label}
+            {/* The picked layout, invisible, holds the width; the visible one sits on top. */}
+            <span aria-hidden style={{ gridArea: "1 / 1", display: "inline-flex", alignItems: "center", gap: 12, visibility: "hidden" }}>
+              <Tick />
+              {d.label}
+            </span>
+            <span style={{ gridArea: "1 / 1", display: "inline-flex", alignItems: "center", gap: 12, justifySelf: on ? "start" : "center", paddingLeft: on ? 0 : 14 }}>
+              {on ? <Tick /> : null}
+              {d.label}
+            </span>
           </UnstyledButton>
         );
       })}
     </Group>
+  );
+}
+
+/** The lime circle with a tick on the picked type. */
+function Tick() {
+  return (
+    <span
+      aria-hidden
+      style={{
+        width: 38,
+        height: 38,
+        borderRadius: "50%",
+        background: charted.lime,
+        color: charted.green,
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <IconCheck size={22} stroke={3} />
+    </span>
   );
 }
 
