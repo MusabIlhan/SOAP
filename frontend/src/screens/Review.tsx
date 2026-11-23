@@ -1,12 +1,13 @@
 import { Anchor, Box, Button, Card, Group, Stack, Text, Title } from "@mantine/core";
-import { IconArrowLeft, IconCheck, IconCopy, IconRefresh } from "@tabler/icons-react";
+import { IconArrowLeft, IconCheck, IconCopy, IconMessage, IconRefresh } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 
 import { NoteSection, sectionText } from "../components/NoteSection";
 import { ThingsToCover } from "../components/ThingsToCover";
+import { TranscriptDrawer } from "../components/TranscriptDrawer";
 import { ApiError, mergeCoverage, writeNote } from "../api";
 import { charted } from "../theme";
-import type { NoteResponse, NoteSectionId, ReviewProps } from "../types";
+import type { NoteResponse, NoteSectionId, ReviewProps, TranscriptLine } from "../types";
 import classes from "./Review.module.css";
 
 /** The four sections, shown as "Writing…" until the note arrives. */
@@ -34,18 +35,41 @@ export function Review({ device, transcript, coverage, onNewVisit, onCopied }: R
   const [selection, setSelection] = useState<Selection>(null);
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState<string | null>(null);
+  // "What was heard" (msg:79): the lines as the clinician has fixed them, and the lines
+  // the note on screen was written from. They differ until "Rewrite the note" is pressed.
+  const [heardOpen, setHeardOpen] = useState(false);
+  const [lines, setLines] = useState<TranscriptLine[]>(transcript);
+  const [noteLines, setNoteLines] = useState<TranscriptLine[]>(transcript);
+
+  useEffect(() => {
+    setLines(transcript);
+    setNoteLines(transcript);
+  }, [transcript]);
+
+  const usedLines = lines.filter((line) => line.text.trim() !== "");
+  const linesChanged = JSON.stringify(usedLines) !== JSON.stringify(noteLines);
+
+  const rewriteNote = () => {
+    setNote(null);
+    setEdits({});
+    setSelection(null);
+    setCopied(false);
+    setCopyError(null);
+    setNoteLines(usedLines);
+    setHeardOpen(false);
+  };
 
   useEffect(() => {
     const controller = new AbortController();
     setError(null);
-    writeNote({ device_id: device.id, transcript }, controller.signal)
+    writeNote({ device_id: device.id, transcript: noteLines }, controller.signal)
       .then(setNote)
       .catch((err: unknown) => {
         if (controller.signal.aborted) return;
         setError(err instanceof ApiError ? err.message : "Something went wrong while writing the note.");
       });
     return () => controller.abort();
-  }, [device.id, transcript, attempt]);
+  }, [device.id, noteLines, attempt]);
 
   // The note's own check can add greens; it never takes one away (q14).
   const shownCoverage = note ? mergeCoverage(coverage, note.coverage) : coverage;
@@ -106,6 +130,12 @@ export function Review({ device, transcript, coverage, onNewVisit, onCopied }: R
           </Text>
         </Stack>
         <Group gap={28} align="center" wrap="nowrap" style={{ flex: "none" }}>
+          <Anchor component="button" type="button" onClick={() => setHeardOpen(true)} fz={19} fw={600} c={charted.green}>
+            <Group gap={6} wrap="nowrap">
+              <IconMessage size={20} stroke={2.2} />
+              {linesChanged ? "What was heard (changed)" : "What was heard"}
+            </Group>
+          </Anchor>
           <Anchor component="button" type="button" onClick={onNewVisit} fz={19} fw={600} c={charted.green}>
             <Group gap={6} wrap="nowrap">
               <IconArrowLeft size={20} stroke={2.2} />
@@ -202,6 +232,16 @@ export function Review({ device, transcript, coverage, onNewVisit, onCopied }: R
           />
         </Box>
       </Box>
+
+      <TranscriptDrawer
+        opened={heardOpen}
+        onClose={() => setHeardOpen(false)}
+        lines={lines}
+        onChange={setLines}
+        changed={linesChanged}
+        canRewrite={note !== null || error !== null}
+        onRewrite={rewriteNote}
+      />
     </Box>
   );
 }
