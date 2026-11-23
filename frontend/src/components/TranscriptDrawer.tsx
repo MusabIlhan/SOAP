@@ -1,11 +1,11 @@
 import { Box, Button, Drawer, Stack, Text, Textarea } from "@mantine/core";
 import { IconPlus, IconRefresh } from "@tabler/icons-react";
 
+import { ADDED_SPEAKER, speakerName as plainName } from "../lib/speakers";
 import { charted } from "../theme";
 import type { TranscriptLine } from "../types";
 
-/** The speaker label sent to the server for a line the clinician adds after the visit. */
-export const ADDED_SPEAKER = "Added after the visit";
+export { ADDED_SPEAKER };
 
 export interface TranscriptDrawerProps {
   opened: boolean;
@@ -20,11 +20,6 @@ export interface TranscriptDrawerProps {
   onRewrite: () => void;
 }
 
-function speakerName(speaker: string): string {
-  if (speaker === ADDED_SPEAKER) return ADDED_SPEAKER;
-  return speaker ? `Speaker ${speaker}` : "Speaker";
-}
-
 /**
  * "What was heard" on review (msg:79): the words of the visit, one line per speaker
  * turn, each fixable in place, plus lines the recording missed. Nothing changes in
@@ -36,6 +31,8 @@ export function TranscriptDrawer({ opened, onClose, lines, onChange, changed, ca
     onChange(lines.map((line, i) => (i === index ? { ...line, text } : line)));
 
   const addLine = () => onChange([...lines, { speaker: ADDED_SPEAKER, text: "" }]);
+  // Shown as Clinician / Patient; the lines keep Soniox's labels for the server.
+  const speakerName = (speaker: string) => plainName(speaker, lines);
 
   return (
     <Drawer

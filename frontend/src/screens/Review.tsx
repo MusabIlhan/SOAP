@@ -217,6 +217,7 @@ export function Review({ device, transcript, coverage, onNewVisit, onCopied }: R
                   onEdit={(text) => editSection(id, text)}
                   selectedIndex={selection?.kind === "sentence" && selection.section === id ? selection.index : null}
                   onSelectSentence={(index) => toggle({ kind: "sentence", section: id, index })}
+                  lines={noteLines}
                 />
               ))}
             </Stack>
@@ -229,6 +230,7 @@ export function Review({ device, transcript, coverage, onNewVisit, onCopied }: R
             coverage={shownCoverage}
             selectedId={selection?.kind === "question" ? selection.id : null}
             onSelect={(id) => toggle({ kind: "question", id })}
+            lines={noteLines}
           />
         </Box>
       </Box>

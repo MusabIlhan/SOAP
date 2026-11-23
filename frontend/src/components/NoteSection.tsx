@@ -2,8 +2,9 @@ import { Button, Group, Stack, Text, Textarea } from "@mantine/core";
 import { IconCheck, IconPencil } from "@tabler/icons-react";
 import { useState, type KeyboardEvent } from "react";
 
+import { quoteSpeaker } from "../lib/speakers";
 import { charted } from "../theme";
-import type { NoteSentence } from "../types";
+import type { NoteSentence, TranscriptLine } from "../types";
 import classes from "./NoteSection.module.css";
 
 export interface NoteSectionProps {
@@ -18,6 +19,8 @@ export interface NoteSectionProps {
   /** The sentence whose source words are open, if it is in this section. */
   selectedIndex: number | null;
   onSelectSentence: (index: number) => void;
+  /** The lines the note was written from, so an open quote can say who said it. */
+  lines?: TranscriptLine[];
 }
 
 /** The section as plain text: the clinician's edit if there is one, else the model's sentences. */
@@ -39,6 +42,7 @@ export function NoteSection({
   onEdit,
   selectedIndex,
   onSelectSentence,
+  lines,
 }: NoteSectionProps) {
   const [editing, setEditing] = useState(false);
   const writing = sentences === null;
@@ -148,14 +152,15 @@ export function NoteSection({
       )}
 
       {!editing && editedText === null && selectedIndex !== null && sentences?.[selectedIndex] ? (
-        <Source text={sentences[selectedIndex].quote} />
+        <Source text={sentences[selectedIndex].quote} lines={lines} />
       ) : null}
     </Stack>
   );
 }
 
 /** The words from the visit a sentence came from, in the same box as an open thing to cover. */
-function Source({ text }: { text: string }) {
+function Source({ text, lines }: { text: string; lines?: TranscriptLine[] }) {
+  const who = lines ? quoteSpeaker(text, lines) : null;
   return (
     <Text
       fz={20}
@@ -167,7 +172,7 @@ function Source({ text }: { text: string }) {
       style={{ background: charted.mist, borderRadius: 16, borderLeft: `4px solid ${charted.lime}` }}
     >
       <Text component="span" display="block" fz={16} fw={600} c={charted.muted} mb={4}>
-        Said in the visit
+        {who ? `${who} said` : "Said in the visit"}
       </Text>
       “{text}”
     </Text>

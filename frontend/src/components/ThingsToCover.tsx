@@ -2,8 +2,9 @@ import { Box, Card, Text, UnstyledButton } from "@mantine/core";
 import { IconChevronDown, IconChevronRight } from "@tabler/icons-react";
 import type { CSSProperties } from "react";
 
+import { quoteSpeaker } from "../lib/speakers";
 import { charted } from "../theme";
-import type { CoverageItem, GuidingQuestion, ThingsToCoverProps } from "../types";
+import type { CoverageItem, GuidingQuestion, ThingsToCoverProps, TranscriptLine } from "../types";
 
 /**
  * The things to cover, on every state of the screen (start, recording, review).
@@ -28,7 +29,8 @@ export function ThingsToCover({
   listMaxHeight,
   compact = false,
   checking = false,
-}: ThingsToCoverProps & { listMaxHeight?: string; compact?: boolean; checking?: boolean }) {
+  lines,
+}: ThingsToCoverProps & { listMaxHeight?: string; compact?: boolean; checking?: boolean; lines?: TranscriptLine[] }) {
   const byId = new Map(coverage.map((item) => [item.question_id, item]));
 
   return (
@@ -53,6 +55,7 @@ export function ThingsToCover({
             onSelect={onSelect}
             compact={compact}
             checking={checking}
+            lines={lines}
           />
         ))}
       </Box>
@@ -75,9 +78,11 @@ interface RowProps {
   onSelect?: (questionId: string) => void;
   compact: boolean;
   checking: boolean;
+  /** Review only: the visit's lines, so the open quote can say who said it. */
+  lines?: TranscriptLine[];
 }
 
-function Row({ question, item, last, open, onSelect, compact, checking }: RowProps) {
+function Row({ question, item, last, open, onSelect, compact, checking, lines }: RowProps) {
   const covered = Boolean(item?.covered && item.quote);
   const clickable = covered && onSelect !== undefined;
   // Recording passes no onSelect: the line shows at once. Review shows it on click.
@@ -153,7 +158,7 @@ function Row({ question, item, last, open, onSelect, compact, checking }: RowPro
       ) : (
         body
       )}
-      {showQuote && item?.quote ? <Quote text={item.quote} full={open} /> : null}
+      {showQuote && item?.quote ? <Quote text={item.quote} full={open} who={open && lines ? quoteSpeaker(item.quote, lines) : null} /> : null}
     </Box>
   );
 }
@@ -237,7 +242,7 @@ function Status({ covered, clickable, open }: { covered: boolean; clickable: boo
 }
 
 /** The line from the visit that covered the question, word for word. */
-function Quote({ text, full }: { text: string; full: boolean }) {
+function Quote({ text, full, who }: { text: string; full: boolean; who: string | null }) {
   return (
     <Text
       fz={full ? 20 : 17}
@@ -250,6 +255,11 @@ function Quote({ text, full }: { text: string; full: boolean }) {
       py={full ? 14 : 0}
       style={full ? { background: charted.mist, borderRadius: 16, borderLeft: `4px solid ${charted.lime}` } : undefined}
     >
+      {who ? (
+        <Text component="span" display="block" fz={16} fw={600} c={charted.muted} mb={4}>
+          {who} said
+        </Text>
+      ) : null}
       “{text}”
     </Text>
   );
