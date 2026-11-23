@@ -9,8 +9,6 @@ import { startTranscription, type Transcription } from "../lib/transcribe";
 import { charted } from "../theme";
 import type { CoverageItem, RecordingProps, TranscriptLine } from "../types";
 
-/** The live check runs when this much time has passed since the last one and new words came in (q14). */
-const CHECK_EVERY_MS = 15_000;
 /** How many of the latest lines show under the things to cover. */
 const LINES_SHOWN = 3;
 
@@ -36,8 +34,11 @@ export function Recording({ device, onStop }: RecordingProps) {
   const earlier = useRef<TranscriptLine[]>([]);
   const latest = useRef<TranscriptLine[]>([]);
   const coverageRef = useRef<CoverageItem[]>([]);
-  const lastChecked = useRef({ at: 0, length: 0 });
+  const lastChecked = useRef({ length: 0 });
   const inFlight = useRef<Promise<void> | null>(null);
+  /** Someone paused while a check was running, so check again when it ends. */
+  const checkAgain = useRef(false);
+  const live = useRef(false);
   const abort = useRef(new AbortController());
 
   const begin = useCallback(async () => {
@@ -52,6 +53,7 @@ export function Recording({ device, onStop }: RecordingProps) {
           setLines(all);
           setPending(heard);
         },
+        onSpeechEnd: () => checkSoon.current(),
         onError: (message) => {
           earlier.current = latest.current;
           transcription.current = null;
@@ -74,7 +76,7 @@ export function Recording({ device, onStop }: RecordingProps) {
   const runCheck = useCallback(
     (transcript: TranscriptLine[]): Promise<void> => {
       const run = (async () => {
-        lastChecked.current = { at: Date.now(), length: textLength(transcript) };
+        lastChecked.current = { length: textLength(transcript) };
         try {
           const answer = await checkCoverage({ device_id: device.id, transcript }, abort.current.signal);
           coverageRef.current = mergeCoverage(coverageRef.current, answer.items);
@@ -103,18 +105,35 @@ export function Recording({ device, onStop }: RecordingProps) {
     };
   }, [begin]);
 
-  // Once a second: count the time, and run the live check when it is due.
+  /**
+   * The live check runs each time someone pauses after speaking, not on a timer (q27):
+   * at once if no check is running, else once more right after the running one ends.
+   */
+  const checkSoon = useRef(() => {});
+  checkSoon.current = () => {
+    if (!live.current) return;
+    if (inFlight.current) {
+      checkAgain.current = true;
+      return;
+    }
+    checkAgain.current = false;
+    const transcript = latest.current;
+    if (textLength(transcript) <= lastChecked.current.length) return;
+    void runCheck(transcript).then(() => {
+      if (checkAgain.current) checkSoon.current();
+    });
+  };
+
+  useEffect(() => {
+    live.current = phase === "live";
+  }, [phase]);
+
+  // Once a second: count the time.
   useEffect(() => {
     if (phase !== "live") return;
-    const tick = window.setInterval(() => {
-      setSeconds((s) => s + 1);
-      const transcript = latest.current;
-      const hasNewWords = textLength(transcript) > lastChecked.current.length;
-      const due = Date.now() - lastChecked.current.at >= CHECK_EVERY_MS;
-      if (hasNewWords && due && !inFlight.current) void runCheck(transcript);
-    }, 1000);
+    const tick = window.setInterval(() => setSeconds((s) => s + 1), 1000);
     return () => window.clearInterval(tick);
-  }, [phase, runCheck]);
+  }, [phase]);
 
   const stop = async () => {
     setPhase("stopping");

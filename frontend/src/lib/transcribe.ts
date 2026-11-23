@@ -7,7 +7,8 @@
  *
  * Soniox docs read 23 Nov 2026: real-time model `stt-rt-v6`; tokens arrive non-final
  * first and are final once `is_final` is true (never repeated after that); with
- * diarization on, each token carries a `speaker` label ("1", "2", ...).
+ * diarization on, each token carries a `speaker` label ("1", "2", ...). With endpoint
+ * detection on, a final `<end>` token arrives when a speaker pauses after speaking.
  */
 
 import { SonioxClient, type ErrorStatus, type Token } from "@soniox/speech-to-text-web";
@@ -47,6 +48,8 @@ export interface TranscriptUpdate {
 
 export interface TranscribeCallbacks {
   onUpdate: (update: TranscriptUpdate) => void;
+  /** Someone paused after speaking: Soniox sent its end-of-speech mark (q27). Called after onUpdate. */
+  onSpeechEnd: () => void;
   /** A plain sentence the screen can show as is. Transcription has stopped. */
   onError: (message: string) => void;
 }
@@ -81,12 +84,17 @@ export async function startTranscription(callbacks: TranscribeCallbacks): Promis
     keepAlive: true,
     onPartialResult: (result) => {
       pending = "";
+      let ended = false;
       for (const token of result.tokens) {
-        if (isMarker(token)) continue;
+        if (isMarker(token)) {
+          if (token.text === "<end>") ended = true;
+          continue;
+        }
         if (token.is_final) addFinal(lines, token);
         else pending += token.text;
       }
       callbacks.onUpdate({ lines: lines.map((line) => ({ ...line })), pending: pending.trim() });
+      if (ended) callbacks.onSpeechEnd();
     },
     onFinished: () => finished?.(),
     onError: (status, message) => {
@@ -103,6 +111,7 @@ export async function startTranscription(callbacks: TranscribeCallbacks): Promis
     audioFormat: "auto",
     languageHints: ["en"],
     enableSpeakerDiarization: true,
+    enableEndpointDetection: true,
     context: {
       general: [
         { key: "domain", value: "Healthcare" },
