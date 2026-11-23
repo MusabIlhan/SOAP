@@ -11,3 +11,62 @@
   min-height: 0;
   overflow-y: auto;
 }
+
+/* Phone (msg:91): one column that scrolls with the page, header links under the
+   title, "Copy note" full width at the bottom of the screen. Nothing here applies
+   above 700px, so the laptop layout is untouched. Inline Mantine props need
+   !important to be overridden. */
+
+@media (max-width: 700px) {
+  .page {
+    flex: none !important;
+    min-height: auto !important;
+    padding: 8px 16px 120px !important;
+  }
+
+  .header {
+    flex-wrap: wrap !important;
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 12px;
+  }
+
+  .actions {
+    flex-wrap: wrap !important;
+    gap: 8px 20px !important;
+    flex: 1 1 auto !important;
+  }
+
+  .copy {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    width: auto;
+    z-index: 100;
+  }
+
+  .grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: auto !important;
+    flex: none !important;
+  }
+
+  .card {
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 20px !important;
+  }
+
+  .coverColumn {
+    max-height: none;
+  }
+
+  .coverColumn > * {
+    overflow: visible;
+  }
+
+  .drawerRoot {
+    --drawer-size: 100% !important;
+  }
+}

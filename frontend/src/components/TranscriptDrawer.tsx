@@ -18,6 +18,8 @@ export interface TranscriptDrawerProps {
   /** False while a note is being written, so a second rewrite can't start. */
   canRewrite: boolean;
   onRewrite: () => void;
+  /** Extra class on the drawer root; review uses it to go full width on a phone. */
+  className?: string;
 }
 
 /**
@@ -26,7 +28,7 @@ export interface TranscriptDrawerProps {
  * the note until "Rewrite the note" is pressed. It slides over the page, so the
  * review stays one window high.
  */
-export function TranscriptDrawer({ opened, onClose, lines, onChange, changed, canRewrite, onRewrite }: TranscriptDrawerProps) {
+export function TranscriptDrawer({ opened, onClose, lines, onChange, changed, canRewrite, onRewrite, className }: TranscriptDrawerProps) {
   const setText = (index: number, text: string) =>
     onChange(lines.map((line, i) => (i === index ? { ...line, text } : line)));
 
@@ -36,6 +38,7 @@ export function TranscriptDrawer({ opened, onClose, lines, onChange, changed, ca
 
   return (
     <Drawer
+      className={className}
       opened={opened}
       onClose={onClose}
       position="right"

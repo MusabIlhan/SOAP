@@ -112,6 +112,7 @@ export function Review({ device, transcript, coverage, onNewVisit, onCopied }: R
     // Fills the screen under the top bar (App makes it a column); the note and the things
     // to cover each scroll on their own, so "Copy note" never leaves the screen.
     <Box
+      className={classes.page}
       px={64}
       pt={8}
       pb={32}
@@ -120,7 +121,7 @@ export function Review({ device, transcript, coverage, onNewVisit, onCopied }: R
       w="100%"
       style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}
     >
-      <Group justify="space-between" align="center" wrap="nowrap" mb={20} style={{ flex: "none" }}>
+      <Group className={classes.header} justify="space-between" align="center" wrap="nowrap" mb={20} style={{ flex: "none" }}>
         <Stack gap={6}>
           <Title order={2} fz={38} style={{ letterSpacing: "-0.03em" }}>
             {heading}
@@ -129,7 +130,7 @@ export function Review({ device, transcript, coverage, onNewVisit, onCopied }: R
             {subline}
           </Text>
         </Stack>
-        <Group gap={28} align="center" wrap="nowrap" style={{ flex: "none" }}>
+        <Group className={classes.actions} gap={28} align="center" wrap="nowrap" style={{ flex: "none" }}>
           <Anchor component="button" type="button" onClick={() => setHeardOpen(true)} fz={19} fw={600} c={charted.green}>
             <Group gap={6} wrap="nowrap">
               <IconMessage size={20} stroke={2.2} />
@@ -143,6 +144,7 @@ export function Review({ device, transcript, coverage, onNewVisit, onCopied }: R
             </Group>
           </Anchor>
           <Button
+            className={classes.copy}
             onClick={copyNote}
             disabled={!note}
             h={72}
@@ -177,6 +179,7 @@ export function Review({ device, transcript, coverage, onNewVisit, onCopied }: R
       </Group>
 
       <Box
+        className={classes.grid}
         style={{
           display: "grid",
           gridTemplateColumns: "minmax(0, 1.25fr) minmax(0, 1fr)",
@@ -188,6 +191,7 @@ export function Review({ device, transcript, coverage, onNewVisit, onCopied }: R
         }}
       >
         <Card
+          className={classes.card}
           shadow="none"
           px={36}
           py={26}
@@ -243,6 +247,7 @@ export function Review({ device, transcript, coverage, onNewVisit, onCopied }: R
         changed={linesChanged}
         canRewrite={note !== null || error !== null}
         onRewrite={rewriteNote}
+        className={classes.drawerRoot}
       />
     </Box>
   );
