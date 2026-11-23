@@ -41,7 +41,7 @@ export function ThingsToCover({
       py={compact ? 12 : 24}
       style={{ boxShadow: charted.cardShadow, borderColor: charted.line }}
     >
-      {compact ? <style>{LIVE_KEYFRAMES}</style> : null}
+      {compact ? <style>{LIVE_KEYFRAMES}</style> : <style>{PHONE_ROWS}</style>}
       <Box style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }} mb={4}>
         <Text fz={17} fw={600} c={charted.muted}>
           Things to cover
@@ -65,6 +65,17 @@ export function ThingsToCover({
     </Card>
   );
 }
+
+/**
+ * Start and review on a phone (q35, msg:100): the status goes on its own line under the
+ * question, so the name and question take the row's whole width. Above 700px nothing changes.
+ */
+const PHONE_ROWS = `
+@media (max-width: 700px) {
+  [data-ttc-body] { flex-wrap: wrap; gap: 0 12px !important; }
+  [data-ttc-status] { flex-basis: 100% !important; margin-left: 42px !important; margin-top: 4px !important; }
+}
+`;
 
 /** Recording only: the soft breathing of "Checking…", and the covering line fading in. */
 const LIVE_KEYFRAMES = `
@@ -138,7 +149,7 @@ function Row({ question, item, last, open, onSelect, compact, lines }: RowProps)
   }
 
   const body = (
-    <Box style={{ display: "flex", alignItems: "flex-start", gap: 16, width: "100%" }}>
+    <Box data-ttc-body style={{ display: "flex", alignItems: "flex-start", gap: 16, width: "100%" }}>
       <Dot covered={covered} />
       <Box style={{ flex: 1, minWidth: 0 }}>
         <Text fz={22} fw={600} lh={1.3} c={covered ? charted.ink : charted.muted}>
@@ -225,7 +236,7 @@ function CheckingLine({ checking }: { checking: boolean }) {
 function Status({ covered, clickable, open }: { covered: boolean; clickable: boolean; open: boolean }) {
   if (!covered) {
     return (
-      <Text fz={16} fw={500} c="#9AA096" style={{ flex: "none", marginTop: 3 }}>
+      <Text data-ttc-status fz={16} fw={500} c="#9AA096" style={{ flex: "none", marginTop: 3 }}>
         Not discussed yet
       </Text>
     );
@@ -233,7 +244,7 @@ function Status({ covered, clickable, open }: { covered: boolean; clickable: boo
   if (!clickable) return null;
   const Chevron = open ? IconChevronDown : IconChevronRight;
   return (
-    <Box style={{ display: "flex", alignItems: "center", gap: 4, flex: "none", marginTop: 3, color: charted.green }}>
+    <Box data-ttc-status style={{ display: "flex", alignItems: "center", gap: 4, flex: "none", marginTop: 3, color: charted.green }}>
       <Text fz={16} fw={600} c={charted.green}>
         {open ? "Hide words" : "What was said"}
       </Text>
