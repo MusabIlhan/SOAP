@@ -44,7 +44,7 @@ export function ThingsToCover({
       <Text fz={17} fw={600} c={charted.muted} mb={4}>
         Things to cover
       </Text>
-      <Box style={listMaxHeight ? { maxHeight: listMaxHeight, overflowY: "auto", overscrollBehavior: "contain" } : undefined}>
+      <Box data-list style={listMaxHeight ? { maxHeight: listMaxHeight, overflowY: "auto", overscrollBehavior: "contain" } : undefined}>
         {questions.map((question, index) => (
           <Row
             key={question.id}

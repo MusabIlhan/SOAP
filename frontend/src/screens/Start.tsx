@@ -2,6 +2,7 @@ import { Box, Button, Group, Loader, Stack, Text, Title, UnstyledButton } from "
 import { IconCheck, IconRefresh } from "@tabler/icons-react";
 
 import { ThingsToCover } from "../components/ThingsToCover";
+import phone from "./Phone.module.css";
 import { charted } from "../theme";
 import type { Device, DeviceId } from "../types";
 
@@ -25,11 +26,11 @@ export function Start({ devices, error, onRetry, deviceId, onPickDevice, onStart
   const device = devices?.find((d) => d.id === deviceId) ?? null;
 
   return (
-    <Stack align="center" gap={0} pt={40} pb={40}>
+    <Stack align="center" gap={0} pt={40} pb={40} className={phone.start}>
       <Title order={1} style={{ letterSpacing: "-0.03em" }} c={charted.ink}>
         Ready when you are
       </Title>
-      <Text fz={24} c={charted.muted} mt={14}>
+      <Text fz={24} c={charted.muted} mt={14} className={phone.startLead}>
         Press the button, then talk with your patient as usual.
       </Text>
 
@@ -41,7 +42,7 @@ export function Start({ devices, error, onRetry, deviceId, onPickDevice, onStart
         <>
           <DevicePicker devices={devices} deviceId={deviceId} onPick={onPickDevice} />
           <StartButton onClick={onStart} />
-          <Box w={760} mt={48}>
+          <Box w={760} mt={48} className={phone.listBox}>
             {/* The rows scroll inside the card. 650px is everything above the rows (bar,
                 title, pills, button, card heading) and below them (card and page padding),
                 so the page fits one 900px-high laptop screen with any type picked. */}
@@ -63,7 +64,7 @@ function DevicePicker({
   onPick: (id: DeviceId) => void;
 }) {
   return (
-    <Group gap={14} mt={36} role="radiogroup" aria-label="This visit is for">
+    <Group gap={14} mt={36} className={phone.pills} role="radiogroup" aria-label="This visit is for">
       {devices.map((d) => {
         const on = d.id === deviceId;
         return (
@@ -72,6 +73,7 @@ function DevicePicker({
             role="radio"
             aria-checked={on}
             onClick={() => onPick(d.id)}
+            className={phone.pill}
             style={{
               // Every pill is as wide as it is when picked (tick included), so picking
               // another type never resizes a pill or pushes its neighbours (msg:61).
@@ -133,6 +135,7 @@ function StartButton({ onClick }: { onClick: () => void }) {
     <UnstyledButton
       onClick={onClick}
       mt={36}
+      className={phone.startButton}
       style={{
         display: "inline-flex",
         alignItems: "center",

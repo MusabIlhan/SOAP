@@ -9,6 +9,7 @@ import { ThingsToCover } from "../components/ThingsToCover";
 import { speakerName } from "../lib/speakers";
 import { startTranscription, type Transcription } from "../lib/transcribe";
 import { charted } from "../theme";
+import phone from "./Phone.module.css";
 import type { CoverageItem, RecordingProps, TranscriptLine } from "../types";
 
 /** How many of the latest lines show under the things to cover. */
@@ -180,6 +181,7 @@ export function Recording({ device, onStop }: RecordingProps) {
   return (
     <Box
       ref={root}
+      className={phone.recording}
       px={64}
       pt={12}
       pb={20}
@@ -206,7 +208,7 @@ export function Recording({ device, onStop }: RecordingProps) {
           </Text>
         </Stack>
 
-        <Box ref={micSlot.ref} style={{ flex: "1 1 0", minHeight: 0, alignSelf: "stretch", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <Box ref={micSlot.ref} className={phone.micSlot} style={{ flex: "1 1 0", minHeight: 0, alignSelf: "stretch", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <MicLight stream={stream} size={micSize} />
         </Box>
 
@@ -222,6 +224,7 @@ export function Recording({ device, onStop }: RecordingProps) {
         <Button
           onClick={() => void stop()}
           disabled={phase === "starting" || stopping}
+          className={phone.stop}
           h={88}
           style={{ flex: "none" }}
           pl={44}
@@ -248,12 +251,13 @@ export function Recording({ device, onStop }: RecordingProps) {
             {checkError} The list stays as it is and is checked again at Stop.
           </Text>
         ) : null}
-        <Text fz={15} fw={600} c={charted.muted} px={8} mt={4} mb={-6} style={{ flex: "none" }}>
+        <Text fz={15} fw={600} c={charted.muted} px={8} mt={4} mb={-6} className={phone.small} style={{ flex: "none" }}>
           What the mic hears
         </Text>
         <Box
           px={8}
           aria-live="off"
+          className={phone.words}
           style={{ flex: "1 1 0", minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "flex-end" }}
         >
           {/* Grows to fill the room, so lines sit at the top; when they need more room it overflows upward, so the newest stay in view. */}
@@ -266,7 +270,7 @@ export function Recording({ device, onStop }: RecordingProps) {
             {shown.map((line, index) => (
               <Group key={lines.length - shown.length + index} gap={10} wrap="nowrap" align="baseline">
                 {line.speaker ? (
-                  <Text fz={14} fw={600} c="#A3A8A1" style={{ flex: "none" }}>
+                  <Text fz={14} fw={600} c="#A3A8A1" className={phone.small} style={{ flex: "none" }}>
                     {speakerName(line.speaker, lines)}
                   </Text>
                 ) : null}

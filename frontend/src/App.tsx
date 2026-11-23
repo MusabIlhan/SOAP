@@ -1,4 +1,5 @@
 import { Box, Group, Text } from "@mantine/core";
+import phone from "./screens/Phone.module.css";
 import { useCallback, useEffect, useState } from "react";
 
 import { ApiError, fetchDevices } from "./api";
@@ -114,7 +115,7 @@ export default function App() {
 
 function TopBar({ step, device }: { step: 1 | 2 | 3; device: Device | null }) {
   return (
-    <Group justify="space-between" align="center" px={64} py={24} wrap="nowrap">
+    <Group justify="space-between" align="center" px={64} py={24} wrap="nowrap" className={phone.topBar}>
       <Box w={320}>
         <Brand />
       </Box>
