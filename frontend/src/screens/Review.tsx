@@ -7,6 +7,7 @@ import { ThingsToCover } from "../components/ThingsToCover";
 import { ApiError, mergeCoverage, writeNote } from "../api";
 import { charted } from "../theme";
 import type { NoteResponse, NoteSectionId, ReviewProps } from "../types";
+import classes from "./Review.module.css";
 
 /** The four sections, shown as "Writing…" until the note arrives. */
 const SECTIONS: { id: NoteSectionId; title: string }[] = [
@@ -25,7 +26,7 @@ type Selection = { kind: "question"; id: string } | { kind: "sentence"; section:
  * sentence opens the words it came from. Each section can be edited in place, and
  * "Copy note" puts the whole note on the clipboard.
  */
-export function Review({ device, transcript, coverage, onNewVisit }: ReviewProps) {
+export function Review({ device, transcript, coverage, onNewVisit, onCopied }: ReviewProps) {
   const [note, setNote] = useState<NoteResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
@@ -59,6 +60,7 @@ export function Review({ device, transcript, coverage, onNewVisit }: ReviewProps
     try {
       await navigator.clipboard.writeText(noteText());
       setCopied(true);
+      onCopied?.();
     } catch {
       setCopyError("Couldn't copy. Select the note and copy it by hand.");
     }
@@ -83,8 +85,18 @@ export function Review({ device, transcript, coverage, onNewVisit }: ReviewProps
       : "This takes a few seconds.";
 
   return (
-    <Box px={64} pt={8} pb={64} maw={1440} mx="auto">
-      <Group justify="space-between" align="center" wrap="nowrap" mb={24}>
+    // Fills the screen under the top bar (App makes it a column); the note and the things
+    // to cover each scroll on their own, so "Copy note" never leaves the screen.
+    <Box
+      px={64}
+      pt={8}
+      pb={32}
+      maw={1440}
+      mx="auto"
+      w="100%"
+      style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}
+    >
+      <Group justify="space-between" align="center" wrap="nowrap" mb={20} style={{ flex: "none" }}>
         <Stack gap={6}>
           <Title order={2} fz={38} style={{ letterSpacing: "-0.03em" }}>
             {heading}
@@ -138,11 +150,20 @@ export function Review({ device, transcript, coverage, onNewVisit }: ReviewProps
         style={{
           display: "grid",
           gridTemplateColumns: "minmax(0, 1.25fr) minmax(0, 1fr)",
+          gridTemplateRows: "minmax(0, 1fr)",
           gap: 28,
           alignItems: "start",
+          flex: 1,
+          minHeight: 0,
         }}
       >
-        <Card shadow="none" px={36} py={30} style={{ boxShadow: charted.cardShadow, borderColor: charted.line }}>
+        <Card
+          shadow="none"
+          px={36}
+          py={26}
+          mah="100%"
+          style={{ boxShadow: charted.cardShadow, borderColor: charted.line, overflowY: "auto" }}
+        >
           <Text fz={17} fw={600} c={charted.muted} mb={8}>
             Note
           </Text>
@@ -156,7 +177,7 @@ export function Review({ device, transcript, coverage, onNewVisit }: ReviewProps
               </Button>
             </Stack>
           ) : (
-            <Stack gap={22}>
+            <Stack gap={18}>
               {SECTIONS.map(({ id, title }) => (
                 <NoteSection
                   key={id}
@@ -172,7 +193,7 @@ export function Review({ device, transcript, coverage, onNewVisit }: ReviewProps
           )}
         </Card>
 
-        <Box style={{ position: "sticky", top: 24 }}>
+        <Box className={classes.coverColumn}>
           <ThingsToCover
             questions={device.questions}
             coverage={shownCoverage}

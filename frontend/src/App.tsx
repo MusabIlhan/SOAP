@@ -19,7 +19,7 @@ type View =
   | { name: "home" }
   | { name: "start" }
   | { name: "recording" }
-  | { name: "review"; transcript: TranscriptLine[]; coverage: CoverageItem[] };
+  | { name: "review"; transcript: TranscriptLine[]; coverage: CoverageItem[]; copied?: boolean };
 
 const APP_HASH = "#app";
 
@@ -73,9 +73,16 @@ export default function App() {
   if (view.name === "home") return <Home onEnter={openApp} />;
 
   return (
-    <Box mih="100vh">
+    // On review the page is exactly one screen high; the note and the list scroll inside it.
+    <Box
+      mih="100vh"
+      style={view.name === "review" ? { height: "100vh", display: "flex", flexDirection: "column" } : undefined}
+    >
       {/* Recording names the device under its own title, so the bar shows it on review only. */}
-      <TopBar step={view.name === "review" ? 2 : 1} device={view.name === "review" ? device : null} />
+      <TopBar
+        step={view.name === "review" ? (view.copied ? 3 : 2) : 1}
+        device={view.name === "review" ? device : null}
+      />
       {view.name === "start" || !device ? (
         <Start
           devices={devices}
@@ -96,6 +103,7 @@ export default function App() {
           transcript={view.transcript}
           coverage={view.coverage}
           onNewVisit={() => setView({ name: "start" })}
+          onCopied={() => setView((v) => (v.name === "review" ? { ...v, copied: true } : v))}
         />
       )}
     </Box>

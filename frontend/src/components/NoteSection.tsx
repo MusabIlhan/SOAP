@@ -58,7 +58,7 @@ export function NoteSection({
   };
 
   return (
-    <Stack gap={14}>
+    <Stack gap={8}>
       <Group justify="space-between" align="center" wrap="nowrap" mih={44}>
         <Text component="h3" fz={24} fw={700} c={charted.ink} lh={1.3} m={0}>
           {title}

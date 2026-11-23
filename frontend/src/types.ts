@@ -122,4 +122,6 @@ export interface ReviewProps {
   coverage: CoverageItem[];
   /** Back to the start state for the next visit. */
   onNewVisit: () => void;
+  /** Called after "Copy note" puts the note on the clipboard, so the top bar can light "3 Done". */
+  onCopied?: () => void;
 }
