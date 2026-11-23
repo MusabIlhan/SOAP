@@ -99,6 +99,7 @@ function Row({ question, item, last, open, onSelect, compact, lines }: RowProps)
           <Box style={{ flex: 1, minWidth: 0 }}>
             <Box style={{ display: "flex", alignItems: "baseline", gap: 14, minWidth: 0 }}>
               <Text
+                data-label
                 fz={21}
                 fw={600}
                 lh={1.3}
@@ -127,7 +128,7 @@ function Row({ question, item, last, open, onSelect, compact, lines }: RowProps)
                 </Text>
               )}
             </Box>
-            <Text fz={16} lh={1.35} c={charted.muted} mt={1}>
+            <Text data-question fz={16} lh={1.35} c={charted.muted} mt={1}>
               {question.question}
             </Text>
           </Box>
@@ -203,8 +204,8 @@ function Dot({ covered }: { covered: boolean }) {
 
 /**
  * Recording only: one small, quiet "Checking…" by the list's title while a check runs,
- * in place of a word on every row (q35). It is always laid out and only shown or hidden,
- * so nothing under it moves when a check starts or ends.
+ * in place of a word on every row (q35). It sits in the title's own line, which keeps the
+ * title's height, so nothing under it moves when a check starts or ends.
  */
 function CheckingLine({ checking }: { checking: boolean }) {
   return (
@@ -214,9 +215,9 @@ function CheckingLine({ checking }: { checking: boolean }) {
       fw={500}
       c="#9AA096"
       aria-live="polite"
-      style={{ whiteSpace: "nowrap", visibility: checking ? "visible" : "hidden", animation: checking ? "ttc-breathe 1.6s ease-in-out infinite" : "none" }}
+      style={{ whiteSpace: "nowrap", animation: checking ? "ttc-breathe 1.6s ease-in-out infinite" : "none" }}
     >
-      Checking…
+      {checking ? "Checking…" : ""}
     </Text>
   );
 }

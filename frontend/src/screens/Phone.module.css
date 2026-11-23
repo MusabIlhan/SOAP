@@ -95,13 +95,10 @@
   .recording [data-status] {
     display: none !important;
   }
-  .recording [data-row] p:first-of-type {
+  .recording [data-label] {
     font-size: 18px !important;
   }
-  .recording [data-row] p {
-    font-size: 15px;
-  }
-  .recording [data-words-hidden] {
-    display: none;
+  .recording [data-question] {
+    font-size: 15px !important;
   }
 }

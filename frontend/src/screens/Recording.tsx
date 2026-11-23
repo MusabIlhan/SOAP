@@ -298,7 +298,8 @@ export function Recording({ device, onStop }: RecordingProps) {
           style={{ flex: "1 1 0", minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "flex-end" }}
         >
           {/* Grows to fill the room, so lines sit at the top; when they need more room it overflows upward, so the newest stay in view. */}
-          <Box style={{ flex: "1 0 auto", visibility: wordsShown ? "visible" : "hidden" }} data-words-hidden={wordsShown ? undefined : ""}>
+          {wordsShown ? (
+          <Box style={{ flex: "1 0 auto" }}>
             {shown.length === 0 && !pending ? (
               <Text fz={16} c="#A3A8A1">
                 The words will appear here as you talk.
@@ -322,6 +323,7 @@ export function Recording({ device, onStop }: RecordingProps) {
               </Text>
             ) : null}
           </Box>
+          ) : null}
         </Box>
       </Stack>
     </Box>
