@@ -6,6 +6,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { ApiError, checkCoverage, mergeCoverage } from "../api";
 import { MicLight } from "../components/MicLight";
 import { ThingsToCover } from "../components/ThingsToCover";
+import { speakerName } from "../lib/speakers";
 import { startTranscription, type Transcription } from "../lib/transcribe";
 import { charted } from "../theme";
 import type { CoverageItem, RecordingProps, TranscriptLine } from "../types";
@@ -266,7 +267,7 @@ export function Recording({ device, onStop }: RecordingProps) {
               <Group key={lines.length - shown.length + index} gap={10} wrap="nowrap" align="baseline">
                 {line.speaker ? (
                   <Text fz={14} fw={600} c="#A3A8A1" style={{ flex: "none" }}>
-                    Speaker {line.speaker}
+                    {speakerName(line.speaker, lines)}
                   </Text>
                 ) : null}
                 <Text fz={16} c={charted.muted} lineClamp={2}>
