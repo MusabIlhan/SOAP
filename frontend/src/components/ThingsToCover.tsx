@@ -17,6 +17,8 @@ import type { CoverageItem, GuidingQuestion, ThingsToCoverProps } from "../types
  * the page is the same height whichever type is picked and nothing on it jumps.
  * `compact` (recording only): tighter rows, with the covering line on the name's own
  * line, so all seven rows fit one laptop screen and a row keeps its height as it turns green.
+ * `checking` (recording only, with `compact`): a check is running, so the grey rows say
+ * "Checking…" in the place of "Not discussed yet", in a slot as wide as the wider of the two.
  */
 export function ThingsToCover({
   questions,
@@ -25,7 +27,8 @@ export function ThingsToCover({
   onSelect,
   listMaxHeight,
   compact = false,
-}: ThingsToCoverProps & { listMaxHeight?: string; compact?: boolean }) {
+  checking = false,
+}: ThingsToCoverProps & { listMaxHeight?: string; compact?: boolean; checking?: boolean }) {
   const byId = new Map(coverage.map((item) => [item.question_id, item]));
 
   return (
@@ -35,6 +38,7 @@ export function ThingsToCover({
       py={compact ? 12 : 24}
       style={{ boxShadow: charted.cardShadow, borderColor: charted.line }}
     >
+      {compact ? <style>{LIVE_KEYFRAMES}</style> : null}
       <Text fz={17} fw={600} c={charted.muted} mb={4}>
         Things to cover
       </Text>
@@ -48,12 +52,20 @@ export function ThingsToCover({
             open={selectedId === question.id}
             onSelect={onSelect}
             compact={compact}
+            checking={checking}
           />
         ))}
       </Box>
     </Card>
   );
 }
+
+/** Recording only: the soft breathing of "Checking…", and the covering line fading in. */
+const LIVE_KEYFRAMES = `
+@keyframes ttc-breathe { 0%, 100% { opacity: 1 } 50% { opacity: 0.45 } }
+@keyframes ttc-fade-in { from { opacity: 0 } to { opacity: 1 } }
+@media (prefers-reduced-motion: reduce) { [data-ttc-anim] { animation: none !important } }
+`;
 
 interface RowProps {
   question: GuidingQuestion;
@@ -62,9 +74,10 @@ interface RowProps {
   open: boolean;
   onSelect?: (questionId: string) => void;
   compact: boolean;
+  checking: boolean;
 }
 
-function Row({ question, item, last, open, onSelect, compact }: RowProps) {
+function Row({ question, item, last, open, onSelect, compact, checking }: RowProps) {
   const covered = Boolean(item?.covered && item.quote);
   const clickable = covered && onSelect !== undefined;
   // Recording passes no onSelect: the line shows at once. Review shows it on click.
@@ -78,17 +91,30 @@ function Row({ question, item, last, open, onSelect, compact }: RowProps) {
           <Dot covered={covered} />
           <Box style={{ flex: 1, minWidth: 0 }}>
             <Box style={{ display: "flex", alignItems: "baseline", gap: 14, minWidth: 0 }}>
-              <Text fz={21} fw={600} lh={1.3} c={covered ? charted.ink : charted.muted} style={{ flex: "none" }}>
+              <Text
+                fz={21}
+                fw={600}
+                lh={1.3}
+                c={covered ? charted.ink : charted.muted}
+                style={{ flex: "none", transition: "color 300ms ease" }}
+              >
                 {question.label}
               </Text>
               {showQuote && item?.quote ? (
-                <Text fz={17} lh={1.3} c={charted.muted} lineClamp={1} style={{ flex: 1, minWidth: 0 }}>
+                <Text
+                  data-ttc-anim
+                  fz={17}
+                  lh={1.3}
+                  c={charted.muted}
+                  lineClamp={1}
+                  style={{ flex: 1, minWidth: 0, animation: "ttc-fade-in 300ms ease both" }}
+                >
                   “{item.quote}”
                 </Text>
               ) : (
                 <Box style={{ flex: 1 }} />
               )}
-              {covered ? null : <Status covered={false} clickable={false} open={false} />}
+              {covered ? null : <LiveStatus checking={checking} />}
             </Box>
             <Text fz={16} lh={1.35} c={charted.muted} mt={1}>
               {question.question}
@@ -153,12 +179,40 @@ function Dot({ covered }: { covered: boolean }) {
     height: 14,
     border: `solid ${charted.lime}`,
     borderWidth: "0 3px 3px 0",
-    transform: "rotate(45deg)",
+    transform: covered ? "rotate(45deg) scale(1)" : "rotate(45deg) scale(0.6)",
+    opacity: covered ? 1 : 0,
+    transition: "opacity 300ms ease, transform 300ms ease",
   };
   return (
     <span style={ring} aria-hidden>
-      {covered ? <span style={tick} /> : null}
+      <span style={tick} />
     </span>
+  );
+}
+
+/**
+ * Recording's grey-row status: "Not discussed yet", or "Checking…" while a check runs.
+ * Both words sit in one grid cell and only one is visible, so the slot keeps the width
+ * of the wider one and nothing beside it moves when the words swap.
+ */
+function LiveStatus({ checking }: { checking: boolean }) {
+  const word: CSSProperties = { gridArea: "1 / 1", textAlign: "right", whiteSpace: "nowrap" };
+  return (
+    <Box style={{ display: "grid", flex: "none", marginTop: 3 }}>
+      <Text fz={16} fw={500} c="#9AA096" style={{ ...word, visibility: checking ? "hidden" : "visible" }}>
+        Not discussed yet
+      </Text>
+      <Text
+        data-ttc-anim
+        fz={16}
+        fw={500}
+        c="#9AA096"
+        aria-hidden={!checking}
+        style={{ ...word, visibility: checking ? "visible" : "hidden", animation: checking ? "ttc-breathe 1.6s ease-in-out infinite" : "none" }}
+      >
+        Checking…
+      </Text>
+    </Box>
   );
 }
 

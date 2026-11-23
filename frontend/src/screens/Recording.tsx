@@ -31,6 +31,8 @@ export function Recording({ device, onStop }: RecordingProps) {
   const [pending, setPending] = useState("");
   const [coverage, setCoverage] = useState<CoverageItem[]>([]);
   const [checkError, setCheckError] = useState<string | null>(null);
+  /** A check is running: the grey rows say "Checking…". */
+  const [checking, setChecking] = useState(false);
   const [seconds, setSeconds] = useState(0);
 
   const transcription = useRef<Transcription | null>(null);
@@ -56,6 +58,9 @@ export function Recording({ device, onStop }: RecordingProps) {
           latest.current = all;
           setLines(all);
           setPending(heard);
+          // A finished sentence is in the final words: check now, not only at the pause.
+          // Only whole sentences, because a green row keeps the first line that covered it.
+          if (/[.?!]["”']?\s*$/.test(all.at(-1)?.text ?? "")) checkSoon.current();
         },
         onSpeechEnd: () => checkSoon.current(),
         onError: (message) => {
@@ -81,6 +86,7 @@ export function Recording({ device, onStop }: RecordingProps) {
     (transcript: TranscriptLine[]): Promise<void> => {
       const run = (async () => {
         lastChecked.current = { length: textLength(transcript) };
+        setChecking(true);
         try {
           const answer = await checkCoverage({ device_id: device.id, transcript }, abort.current.signal);
           coverageRef.current = mergeCoverage(coverageRef.current, answer.items);
@@ -93,6 +99,7 @@ export function Recording({ device, onStop }: RecordingProps) {
       })();
       inFlight.current = run.finally(() => {
         inFlight.current = null;
+        setChecking(false);
       });
       return inFlight.current;
     },
@@ -110,8 +117,9 @@ export function Recording({ device, onStop }: RecordingProps) {
   }, [begin]);
 
   /**
-   * The live check runs each time someone pauses after speaking, not on a timer (q27):
-   * at once if no check is running, else once more right after the running one ends.
+   * The live check runs each time a sentence turns final and each time someone pauses,
+   * not on a timer (q27): at once if no check is running, else once more right after the
+   * running one ends, so the newest words are always checked and two never run at once.
    */
   const checkSoon = useRef(() => {});
   checkSoon.current = () => {
@@ -232,7 +240,7 @@ export function Recording({ device, onStop }: RecordingProps) {
 
       <Stack gap={12} mih={0}>
         <Box style={{ flex: "none" }}>
-          <ThingsToCover questions={device.questions} coverage={coverage} compact />
+          <ThingsToCover questions={device.questions} coverage={coverage} compact checking={checking} />
         </Box>
         {checkError ? (
           <Text fz={16} c={charted.muted} style={{ flex: "none" }}>
