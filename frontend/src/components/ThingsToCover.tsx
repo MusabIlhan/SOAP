@@ -15,6 +15,8 @@ import type { CoverageItem, GuidingQuestion, ThingsToCoverProps } from "../types
 /**
  * `listMaxHeight` (start only): the rows scroll inside the card past this height, so
  * the page is the same height whichever type is picked and nothing on it jumps.
+ * `compact` (recording only): tighter rows, with the covering line on the name's own
+ * line, so all seven rows fit one laptop screen and a row keeps its height as it turns green.
  */
 export function ThingsToCover({
   questions,
@@ -22,11 +24,17 @@ export function ThingsToCover({
   selectedId,
   onSelect,
   listMaxHeight,
-}: ThingsToCoverProps & { listMaxHeight?: string }) {
+  compact = false,
+}: ThingsToCoverProps & { listMaxHeight?: string; compact?: boolean }) {
   const byId = new Map(coverage.map((item) => [item.question_id, item]));
 
   return (
-    <Card shadow="none" px={36} py={24} style={{ boxShadow: charted.cardShadow, borderColor: charted.line }}>
+    <Card
+      shadow="none"
+      px={compact ? 28 : 36}
+      py={compact ? 12 : 24}
+      style={{ boxShadow: charted.cardShadow, borderColor: charted.line }}
+    >
       <Text fz={17} fw={600} c={charted.muted} mb={4}>
         Things to cover
       </Text>
@@ -39,6 +47,7 @@ export function ThingsToCover({
             last={index === questions.length - 1}
             open={selectedId === question.id}
             onSelect={onSelect}
+            compact={compact}
           />
         ))}
       </Box>
@@ -52,13 +61,43 @@ interface RowProps {
   last: boolean;
   open: boolean;
   onSelect?: (questionId: string) => void;
+  compact: boolean;
 }
 
-function Row({ question, item, last, open, onSelect }: RowProps) {
+function Row({ question, item, last, open, onSelect, compact }: RowProps) {
   const covered = Boolean(item?.covered && item.quote);
   const clickable = covered && onSelect !== undefined;
   // Recording passes no onSelect: the line shows at once. Review shows it on click.
   const showQuote = covered && (onSelect === undefined || open);
+
+  if (compact) {
+    // Recording: name, then "Not discussed yet" or the covering line, on one line; the question under it.
+    return (
+      <Box data-row style={{ borderBottom: last ? "none" : "1px solid #F0F0F0", padding: "6px 0" }}>
+        <Box style={{ display: "flex", alignItems: "flex-start", gap: 14, width: "100%" }}>
+          <Dot covered={covered} />
+          <Box style={{ flex: 1, minWidth: 0 }}>
+            <Box style={{ display: "flex", alignItems: "baseline", gap: 14, minWidth: 0 }}>
+              <Text fz={21} fw={600} lh={1.3} c={covered ? charted.ink : charted.muted} style={{ flex: "none" }}>
+                {question.label}
+              </Text>
+              {showQuote && item?.quote ? (
+                <Text fz={17} lh={1.3} c={charted.muted} lineClamp={1} style={{ flex: 1, minWidth: 0 }}>
+                  “{item.quote}”
+                </Text>
+              ) : (
+                <Box style={{ flex: 1 }} />
+              )}
+              {covered ? null : <Status covered={false} clickable={false} open={false} />}
+            </Box>
+            <Text fz={16} lh={1.35} c={charted.muted} mt={1}>
+              {question.question}
+            </Text>
+          </Box>
+        </Box>
+      </Box>
+    );
+  }
 
   const body = (
     <Box style={{ display: "flex", alignItems: "flex-start", gap: 16, width: "100%" }}>

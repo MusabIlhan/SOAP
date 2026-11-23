@@ -1,6 +1,7 @@
 import { Alert, Box, Button, Group, Loader, Stack, Text, Title } from "@mantine/core";
 import { IconPlayerStopFilled } from "@tabler/icons-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useElementSize } from "@mantine/hooks";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { ApiError, checkCoverage, mergeCoverage } from "../api";
 import { MicLight } from "../components/MicLight";
@@ -11,6 +12,9 @@ import type { CoverageItem, RecordingProps, TranscriptLine } from "../types";
 
 /** How many of the latest lines show under the things to cover. */
 const LINES_SHOWN = 3;
+/** The mic light's largest core; on a shorter window it shrinks so Stop stays in view. */
+const MIC_MAX = 168;
+const MIC_MIN = 56;
 
 type Phase = "starting" | "live" | "stopping" | "failed";
 
@@ -150,12 +154,37 @@ export function Recording({ device, onStop }: RecordingProps) {
     onStop(transcript, coverageRef.current);
   };
 
+  // The screen is exactly one window high (1280x720 up): it starts under the top bar and
+  // ends at the window's bottom, the mic light takes the room that is left, and the live
+  // words show the newest lines in whatever room is under the things to cover.
+  const root = useRef<HTMLDivElement>(null);
+  const [top, setTop] = useState(94);
+  useLayoutEffect(() => {
+    if (root.current) setTop(root.current.offsetTop);
+  }, []);
+  const micSlot = useElementSize();
+  const micSize = micSlot.height > 0 ? Math.max(MIC_MIN, Math.min(MIC_MAX, Math.floor(micSlot.height / 2))) : MIC_MAX;
+
   const stopping = phase === "stopping";
   const shown = lines.slice(-LINES_SHOWN);
 
   return (
-    <Box px={64} pt={32} pb={48} style={{ display: "grid", gridTemplateColumns: "minmax(420px, 1fr) minmax(560px, 660px)", gap: 56, alignItems: "start", maxWidth: 1320, margin: "0 auto" }}>
-      <Stack align="center" gap="lg" pt={8}>
+    <Box
+      ref={root}
+      px={64}
+      pt={12}
+      pb={20}
+      style={{
+        display: "grid",
+        gridTemplateColumns: "minmax(400px, 1fr) minmax(600px, 700px)",
+        gap: 48,
+        height: `calc(100vh - ${top}px)`,
+        maxWidth: 1320,
+        margin: "0 auto",
+        boxSizing: "border-box",
+      }}
+    >
+      <Stack align="center" justify="space-between" gap="md" mih={0}>
         <Stack gap={4} align="center">
           <Text fz={18} fw={600} c={charted.muted}>
             {device.label}
@@ -168,10 +197,12 @@ export function Recording({ device, onStop }: RecordingProps) {
           </Text>
         </Stack>
 
-        <MicLight stream={stream} />
+        <Box ref={micSlot.ref} style={{ flex: "1 1 0", minHeight: 0, alignSelf: "stretch", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <MicLight stream={stream} size={micSize} />
+        </Box>
 
         {phase === "failed" && error ? (
-          <Alert color="red" radius="lg" w={460} title="The recording stopped">
+          <Alert color="red" radius="lg" w={460} maw="100%" title="The recording stopped">
             <Text fz={18}>{error}</Text>
             <Button mt="md" size="lg" variant="white" color="brand" onClick={() => void begin()}>
               Try again
@@ -183,6 +214,7 @@ export function Recording({ device, onStop }: RecordingProps) {
           onClick={() => void stop()}
           disabled={phase === "starting" || stopping}
           h={88}
+          style={{ flex: "none" }}
           pl={44}
           pr={14}
           styles={{ label: { fontSize: 32, fontWeight: 600, letterSpacing: "-0.01em", gap: 20 } }}
@@ -198,39 +230,48 @@ export function Recording({ device, onStop }: RecordingProps) {
         </Button>
       </Stack>
 
-      <Stack gap="lg">
-        <ThingsToCover questions={device.questions} coverage={coverage} />
+      <Stack gap={12} mih={0}>
+        <Box style={{ flex: "none" }}>
+          <ThingsToCover questions={device.questions} coverage={coverage} compact />
+        </Box>
         {checkError ? (
-          <Text fz={16} c={charted.muted}>
+          <Text fz={16} c={charted.muted} style={{ flex: "none" }}>
             {checkError} The list stays as it is and is checked again at Stop.
           </Text>
         ) : null}
-        <Box px={8} aria-live="off">
-          <Text fz={15} fw={600} c={charted.muted} mb={6}>
-            What the mic hears
-          </Text>
-          {shown.length === 0 && !pending ? (
-            <Text fz={16} c="#A3A8A1">
-              The words will appear here as you talk.
-            </Text>
-          ) : null}
-          {shown.map((line, index) => (
-            <Group key={lines.length - shown.length + index} gap={10} wrap="nowrap" align="baseline">
-              {line.speaker ? (
-                <Text fz={14} fw={600} c="#A3A8A1" style={{ flex: "none" }}>
-                  Speaker {line.speaker}
-                </Text>
-              ) : null}
-              <Text fz={16} c={charted.muted} lineClamp={2}>
-                {line.text}
+        <Text fz={15} fw={600} c={charted.muted} px={8} mt={4} mb={-6} style={{ flex: "none" }}>
+          What the mic hears
+        </Text>
+        <Box
+          px={8}
+          aria-live="off"
+          style={{ flex: "1 1 0", minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "flex-end" }}
+        >
+          {/* Grows to fill the room, so lines sit at the top; when they need more room it overflows upward, so the newest stay in view. */}
+          <Box style={{ flex: "1 0 auto" }}>
+            {shown.length === 0 && !pending ? (
+              <Text fz={16} c="#A3A8A1">
+                The words will appear here as you talk.
               </Text>
-            </Group>
-          ))}
-          {pending ? (
-            <Text fz={16} c="#A3A8A1" lineClamp={1}>
-              {pending}
-            </Text>
-          ) : null}
+            ) : null}
+            {shown.map((line, index) => (
+              <Group key={lines.length - shown.length + index} gap={10} wrap="nowrap" align="baseline">
+                {line.speaker ? (
+                  <Text fz={14} fw={600} c="#A3A8A1" style={{ flex: "none" }}>
+                    Speaker {line.speaker}
+                  </Text>
+                ) : null}
+                <Text fz={16} c={charted.muted} lineClamp={2}>
+                  {line.text}
+                </Text>
+              </Group>
+            ))}
+            {pending ? (
+              <Text fz={16} c="#A3A8A1" lineClamp={1}>
+                {pending}
+              </Text>
+            ) : null}
+          </Box>
         </Box>
       </Stack>
     </Box>
