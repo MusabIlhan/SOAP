@@ -49,14 +49,21 @@ export function Review({ device, transcript, coverage, onNewVisit, onCopied }: R
   const usedLines = lines.filter((line) => line.text.trim() !== "");
   const linesChanged = JSON.stringify(usedLines) !== JSON.stringify(noteLines);
 
-  const rewriteNote = () => {
+  const rewriteNote = (from: TranscriptLine[] = usedLines) => {
     setNote(null);
     setEdits({});
     setSelection(null);
     setCopied(false);
     setCopyError(null);
-    setNoteLines(usedLines);
+    setNoteLines(from);
     setHeardOpen(false);
+  };
+
+  // "Record more" (msg:99): the spoken lines join the list and the note is rewritten at once.
+  const addRecorded = (added: TranscriptLine[]) => {
+    const next = [...lines, ...added];
+    setLines(next);
+    rewriteNote(next.filter((line) => line.text.trim() !== ""));
   };
 
   useEffect(() => {
@@ -246,7 +253,8 @@ export function Review({ device, transcript, coverage, onNewVisit, onCopied }: R
         onChange={setLines}
         changed={linesChanged}
         canRewrite={note !== null || error !== null}
-        onRewrite={rewriteNote}
+        onRewrite={() => rewriteNote()}
+        onRecorded={addRecorded}
         className={classes.drawerRoot}
       />
     </Box>
